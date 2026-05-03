@@ -1,0 +1,82 @@
+# ==========================================
+# Sign-New Project .gitignore
+# ==========================================
+
+# 1. Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 2. 虚拟环境
+venv/
+env/
+ENV/
+.venv
+
+# 3. IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 4. Jupyter Notebook
+.ipynb_checkpoints
+
+# 5. 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 6. 日志文件
+*.log
+
+# ==========================================
+# Sign-New 项目特定忽略规则
+# ==========================================
+
+# 1. 数据文件（大型二进制文件）
+Data/
+*.pt
+*.pkl
+*.npy
+*.faiss
+
+# 2. 模型权重和检查点
+Models/
+*.ckpt
+*.pth
+*.tar
+best.ckpt
+every.ckpt
+
+# 3. 可视化和实验输出
+comparison_output/
+output/
+results/
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+
+# 4. 临时文件和备份
+*.tmp
+*.bak
+*.backup

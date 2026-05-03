@@ -1,4 +1,5 @@
 # coding: utf-8
+import torch
 import torch.nn.functional as F
 
 from constants import TARGET_PAD
@@ -15,6 +16,11 @@ class Batch:
         self.ntokens = None
 
         self.file_paths = torch_batch.file_paths
+        # 【新增】Gloss 字段
+        self.gloss = None
+        if hasattr(torch_batch, "gloss"):
+            self.gloss = torch_batch.gloss
+        
         self.use_cuda = model.use_cuda
         self.target_pad = TARGET_PAD
 

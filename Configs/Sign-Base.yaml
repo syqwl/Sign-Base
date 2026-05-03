@@ -11,6 +11,7 @@ data:
     skip_frames: 1   # Skip frames in the data, to reduce the data input size
     src_vocab: "./Configs/text_src_vocab.txt"
 
+
 training:
     random_seed: 27   # Random seed for initialisation
     optimizer: "adam"   # Chosen optimiser (adam, ..)
@@ -36,6 +37,14 @@ training:
     keep_last_ckpts: 1 # How many previous best/latest checkpoints to keep
     loss: "L1"  # Loss function (MSE, L1)
     bone_loss: "MSE"  # Loss function (MSE, L1)
+    
+    # Energy Model Configuration (Training only)
+    use_energy: False  # Flag to enable energy-based regularization during training
+    energy_weight: 5.0 # Weight for the energy loss term
+    lambda_vel: 1.0 # Weight for velocity consistency
+    lambda_acc: 0.3 # Weight for acceleration consistency
+    
+    # 【注意】推理阶段的配置请查看 model.diffusion 节点
 
 model:
     trg_size: 534  # Size of target skeleton coordinates (150 for Inverse Kinematics body/hands)
@@ -68,3 +77,31 @@ model:
         embeddings:
           embedding_dim: 1024 # Embedding Dimension
           dropout: 0.0 # Embedding Dropout
+        
+        # ==========================================
+        # 【检索增强配置】训练和推理共用
+        # ==========================================
+        use_retrieval: True
+        retrieval_type: "gloss"
+        
+        # 【新增】Retrieval Dropout 概率 (0.3 ~ 0.5)
+        retrieval_dropout_prob: 0.3
+        
+        # 【新增】Velocity Loss 权重 (0.1 ~ 0.3)
+        velocity_loss_weight: 0.2
+        
+        # Gloss 检索专用参数
+        gloss_db_path: "./Data/phoenix_gloss2pose_results.pkl"  # Gloss-Pose 数据库路径
+        text2gloss_path: "./Data/phoenix_text2gloss_results.pkl"  # Text2Gloss 预测结果（仅推理时使用）
+        
+        # Semantic 检索专用参数
+        retrieval_top_k: 1    # 只取最相似的一个（仅 semantic 模式）
+        
+        # 检索引导强度控制
+        retrieval_alpha_max: 0.7  # 最大引导强度（训练时课程学习，推理时固定）
+
+        # ==========================================
+        # 【能量引导配置】仅推理阶段使用
+        # ==========================================
+        use_energy_guidance: False  # Enable energy-guided sampling during inference
+        energy_guidance_alpha: 0.1  # Guidance strength for energy gradient (0.05 ~ 0.2)

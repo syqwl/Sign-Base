@@ -90,6 +90,9 @@ def load_data(cfg: dict):
     
     # Files field is just a raw text field
     files_field = data.RawField()
+    
+    # 【新增】Gloss field 也是原始文本字段
+    gloss_field = data.RawField()
 
     def tokenize_features(features):
         features = torch.as_tensor(features)
@@ -111,8 +114,9 @@ def load_data(cfg: dict):
                                postprocessing=stack_features)
     
     # Create the Training Data, using the SignProdDataset
+    # 【修改】fields 现在包含 4 个字段：src, trg, file_paths, gloss
     train_data = SignProdDataset(path=train_path,
-                                 fields=(src_field, reg_trg_field, files_field),
+                                 fields=(src_field, reg_trg_field, files_field, gloss_field),
                                  trg_size=trg_size,
                                  skip_frames=skip_frames,
                                  filter_pred=
@@ -135,7 +139,7 @@ def load_data(cfg: dict):
 
     dev_data = SignProdDataset(path=dev_path,
                                trg_size=trg_size,
-                               fields=(src_field, reg_trg_field, files_field),
+                               fields=(src_field, reg_trg_field, files_field, gloss_field),
                                skip_frames=skip_frames,
                                state='dev')
     
@@ -160,7 +164,8 @@ class SignProdDataset(data.Dataset):
         """
 
         if not isinstance(fields[0], (tuple, list)):
-            fields = [('src', fields[0]), ('trg', fields[1]), ('file_paths', fields[2])]
+            # 【修改】增加到 4 个字段：src, trg, file_paths, gloss
+            fields = [('src', fields[0]), ('trg', fields[1]), ('file_paths', fields[2]), ('gloss', fields[3])]
 
         examples = []
         # Extract the parallel src, trg and file files
@@ -168,16 +173,23 @@ class SignProdDataset(data.Dataset):
 
         i = 0
         key = list(src_trg_files.keys())
-        # For Source, Target and FilePath
+        # For Source, Target, FilePath and Gloss
         for files_file in key:
             i += 1
-            src_line, trg_line, files_line = src_trg_files[files_file]['text'], torch.reshape(src_trg_files[files_file]['poses_3d'],(src_trg_files[files_file]['poses_3d'].shape[0],src_trg_files[files_file]['poses_3d'].shape[1]*3)), state + '/' + files_file
-            trg_frames = torch.cat((trg_line,create_register(trg_line.shape[0])), dim=1)
+            sample_data = src_trg_files[files_file]
+            src_line = sample_data['text']
+            trg_line = torch.reshape(sample_data['poses_3d'], (sample_data['poses_3d'].shape[0], sample_data['poses_3d'].shape[1]*3))
+            files_line = state + '/' + files_file
             
-            # Create a dataset examples out of the Source, Target Frames and FilesPath
+            # 【新增】提取 Gloss 字段（如果存在）
+            gloss_line = sample_data.get('gloss', '')
+            
+            trg_frames = torch.cat((trg_line, create_register(trg_line.shape[0])), dim=1)
+            
+            # Create a dataset examples out of the Source, Target Frames, FilesPath and Gloss
             if src_line != '' and trg_line != '':
                 examples.append(data.Example.fromlist(
-                    [src_line, trg_frames, files_line], fields))
+                    [src_line, trg_frames, files_line, gloss_line], fields))
             
         super(SignProdDataset, self).__init__(examples, fields, **kwargs)
 

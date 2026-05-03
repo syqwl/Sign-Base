@@ -382,10 +382,31 @@ class TrainManager:
     # Train the batch
     def _train_batch(self, batch: Batch, update: bool = True) -> Tensor:
 
-        # Get loss from this batch
+        # 【关键修复】计算当前 Batch 的全局样本索引
+        # 假设 batch 对象中包含数据集的索引信息，或者我们通过步数和 batch_size 估算
+        # 这里我们使用一个简单的估算：steps * batch_size (近似值，用于检索对齐)
+        # 更精确的做法是在 Dataset 中记录每个 batch 的起始索引
+        current_sample_idx = self.steps * self.batch_size if hasattr(self, 'batch_size') else None
+
+        # Get loss from this batch (传入当前步数 self.steps 和 sample_idx)
         batch_loss = self.model.get_loss_for_batch(is_train=True,
                                                    batch=batch,
-                                                   loss_function=self.loss)
+                                                   loss_function=self.loss,
+                                                   global_step=self.steps,
+                                                   sample_idx=current_sample_idx)  # 【新增】传递 sample_idx
+
+        # 【新增】记录检索相似度
+        if hasattr(self.model, 'current_batch_avg_sim'):
+            sim_score = self.model.current_batch_avg_sim
+            # 写入 TensorBoard
+            self.tb_writer.add_scalar("train/retrieval_avg_similarity", sim_score, self.steps)
+            
+            # 【优化】在日志中输出更详细的检索信息
+            if self.steps % self.logging_freq == 0:
+                if sim_score >= 0:
+                    self.logger.info(f"Step {self.steps}: Avg Retrieval Similarity: {sim_score:.4f} (Range: 0.0-1.0, Higher is better)")
+                else:
+                    self.logger.info(f"Step {self.steps}: Retrieval disabled or failed")
 
         # normalize batch loss
         if self.normalization == "batch":
@@ -405,6 +426,9 @@ class TrainManager:
         if self.clip_grad_fun is not None:
             # clip gradients (in-place)
             self.clip_grad_fun(params=self.model.parameters())
+        else:
+            # 【核心修复】如果配置中未定义，强制开启梯度裁剪以防止数值爆炸
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
 
         if update:
             # make gradient step

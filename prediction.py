@@ -62,8 +62,9 @@ def validate_on_data(model: Model,
                                        src_mask=batch.src_mask,
                                        src_lengths=batch.src_lengths,
                                        trg_mask=batch.trg_mask,
-                                       is_train=False)
-            
+                                       is_train=False,
+                                       sample_idx=batches * batch_size)
+
             output = torch.cat((output, batch.trg_input[:, :, 534:]), dim=-1)
             
             # Add references, hypotheses and file paths to list

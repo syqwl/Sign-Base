@@ -57,7 +57,9 @@ class MultiHeadedAttention(nn.Module):
 
         if padding_mask is not None:
             # This masks out the attention of the padded end of sequences
-            attention = attention.masked_fill(~padding_mask, 0.0)
+            # Expand padding_mask to (B, 1, 1, T) for broadcasting with (B, H, T, T)
+            mask_expanded = padding_mask.unsqueeze(1).unsqueeze(1)
+            attention = attention.masked_fill(~mask_expanded, 0.0)
 
         # get context vector (select values with attention) and reshape
         context = torch.matmul(attention, v)
